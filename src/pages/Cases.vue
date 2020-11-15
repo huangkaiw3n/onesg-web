@@ -1,6 +1,7 @@
 <template>
   <div class="main">
     <div class="title">Cases</div>
+    <!-- TODO: Temporarily replaced items prop to receive the data fetchedItems for example -->
     <bwc-table
       :commands="(reload, filter)"
       :pagination="true"
@@ -9,7 +10,7 @@
       :pageSize="pageSize"
       :pageSizeList="pageSizeList"
       :columns="columns"
-      :items="items"
+      :items="fetchedItems"
       :total="total"
       @rowClick="rowClick"
       @triggered="triggered"
@@ -23,6 +24,18 @@
 
 <script>
 import { onMounted, ref, reactive } from 'vue'
+import axios from 'axios'
+import _ from 'lodash'
+
+// TODO: Temporarily moved this function here because couldn't get js export import files working.
+// Should figure out and move api services to separate folder/file
+async function fetchRefereeData() {
+  return axios
+    .get(
+      'https://701425e7-05f7-4da8-9fb7-5a4bdc002cfc.mock.pstmn.io/v1/referees'
+    )
+    .then((res) => res.data.results)
+}
 
 export default {
   setup() {
@@ -110,6 +123,40 @@ export default {
       triggered,
       cmd,
     }
+  },
+  // Quick example on using data, created and methods to fetch async data
+  // and data transformation using lodash map.
+  // Not sure if this is the latest Vue method for Vue3
+  // VueJs reference https://router.vuejs.org/guide/advanced/data-fetching.html#fetching-after-navigation
+  // Lodash _.map reference https://lodash.com/docs/4.17.15#map
+  data() {
+    return {
+      fetchedItems: [],
+    }
+  },
+  created() {
+    this.fetchData()
+  },
+  methods: {
+    async fetchData() {
+      const fetchedData = await fetchRefereeData()
+      console.log('fetchedData', fetchedData)
+      // For each data, transform it to the desired shape
+      const transformedData = _.map(fetchedData, (data, key) => {
+        return {
+          id: data.refereeId,
+          beneficiaryName: data.name,
+          caseNumber: key,
+          applicationDate: _.get(data, 'applicationDate', '-'),
+          poc: 'Rachel',
+          referenceName: 'Kristen',
+          organisation: data.organisation,
+          lastUpdate: '25 Dec 2020',
+        }
+      })
+      // Assign it to Vue data
+      this.fetchedItems = transformedData
+    },
   },
 }
 </script>
